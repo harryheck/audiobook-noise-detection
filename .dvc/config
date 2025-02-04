@@ -4,7 +4,4 @@
     shared = group
     type = symlink
 ['remote "myremote"']
-    url = webdavs://tubcloud.tu-berlin.de/remote.php/dav/files/<folder-path>
-    # or for ssh
-    # url = ssh://<ssh-alias>:</path/to/remote/directory>
-    timeout = 600
+    url = webdavs://tubcloud.tu-berlin.de/remote.php/dav/files/6162a6c0-823c-1039-8d2f-510a35d2f935
