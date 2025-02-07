@@ -1,0 +1,33 @@
+schema: '2.0'
+stages:
+  train:
+    cmd: python source/train.py
+    deps:
+    - path: data/processed/
+      hash: md5
+      md5: 778e1a56db5d09498384095056ae5ec1.dir
+      size: 26961100
+      nfiles: 3
+    - path: source/model.py
+      hash: md5
+      md5: 1a075ea228de0e6ef23789688cc2a368
+      size: 1291
+    - path: source/preprocess.py
+      hash: md5
+      md5: 63ba0306c91037001e0d4af164005e81
+      size: 6217
+    - path: source/train.py
+      hash: md5
+      md5: 0cd964ff50deb1e6ea94c90a0a6776d2
+      size: 2894
+    params:
+      params.yaml:
+        general.random_seed: 42
+        train.epochs: 1
+        train.learning_rate: 0.01
+    outs:
+    - path: models
+      hash: md5
+      md5: 7e5c48e5caac0311c1e077b211ec7948.dir
+      size: 1182758
+      nfiles: 1
