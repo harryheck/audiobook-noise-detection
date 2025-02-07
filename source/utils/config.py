@@ -10,8 +10,8 @@ import copy
 import os
 from collections.abc import MutableMapping
 from typing import Any, Dict, Generator, Tuple
-
-import torch
+import tensorflow as tf
+import numpy as np
 from ruamel.yaml import YAML
 
 
@@ -125,45 +125,45 @@ class Params(dict):
         return self._flatten_dict(params_dict)
 
 
-def prepare_device(request: str) -> torch.device:
-    """
-    Prepares the appropriate PyTorch device based on the user's request.
+# def prepare_device(request: str) -> torch.device:
+#     """
+#     Prepares the appropriate PyTorch device based on the user's request.
 
-    Args:
-        request (str): The type of device requested. Options include "mps", "cuda", and "cpu".
-                       - "mps": Metal Performance Shaders (for Apple Silicon GPUs).
-                       - "cuda": NVIDIA CUDA GPU.
-                       - "cpu": Central Processing Unit.
+#     Args:
+#         request (str): The type of device requested. Options include "mps", "cuda", and "cpu".
+#                        - "mps": Metal Performance Shaders (for Apple Silicon GPUs).
+#                        - "cuda": NVIDIA CUDA GPU.
+#                        - "cpu": Central Processing Unit.
 
-    Returns:
-        torch.device: The device that will be used for tensor operations.
+#     Returns:
+#         torch.device: The device that will be used for tensor operations.
 
-    Notes:
-        - If "mps" is requested but not available, the function defaults to "cpu".
-        - If "cuda" is requested but not available, the function defaults to "cpu".
-        - If the request is neither "mps" nor "cuda", the function defaults to "cpu".
+#     Notes:
+#         - If "mps" is requested but not available, the function defaults to "cpu".
+#         - If "cuda" is requested but not available, the function defaults to "cpu".
+#         - If the request is neither "mps" nor "cuda", the function defaults to "cpu".
 
-    Example:
-        device = prepare_device("cuda")
-    """
-    if request == "mps":
-        if torch.backends.mps.is_available():
-            device = torch.device("mps")
-            print("Using MPS device")
-        else:
-            device = torch.device("cpu")
-            print("MPS requested but not available. Using CPU device")
-    elif request == "cuda":
-        if torch.cuda.is_available():
-            device = torch.device("cuda")
-            print("Using CUDA device")
-        else:
-            device = torch.device("cpu")
-            print("CUDA requested but not available. Using CPU device")
-    else:
-        device = torch.device("cpu")
-        print("Using CPU device")
-    return device
+#     Example:
+#         device = prepare_device("cuda")
+#     """
+#     if request == "mps":
+#         if torch.backends.mps.is_available():
+#             device = torch.device("mps")
+#             print("Using MPS device")
+#         else:
+#             device = torch.device("cpu")
+#             print("MPS requested but not available. Using CPU device")
+#     elif request == "cuda":
+#         if torch.cuda.is_available():
+#             device = torch.device("cuda")
+#             print("Using CUDA device")
+#         else:
+#             device = torch.device("cpu")
+#             print("CUDA requested but not available. Using CPU device")
+#     else:
+#         device = torch.device("cpu")
+#         print("Using CPU device")
+#     return device
 
 
 def set_random_seeds(random_seed: int) -> None:
@@ -194,12 +194,17 @@ def set_random_seeds(random_seed: int) -> None:
     else:
         print("The 'numpy' package is not imported, skipping numpy seed.")
 
+    if "tf" in globals():
+        tf.keras.utils.set_random_seed(random_seed)
+    else:
+        print("The 'tensorflow' package is not imported, skipping tensorflow seed.")
+
     if "torch" in globals():
         torch.manual_seed(random_seed)  # type: ignore
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(random_seed)
-        if torch.backends.mps.is_available():
-            torch.mps.manual_seed(random_seed)
+        if torch.cuda.is_available(): # type: ignore
+            torch.cuda.manual_seed_all(random_seed) # type: ignore
+        if torch.backends.mps.is_available(): # type: ignore
+            torch.mps.manual_seed(random_seed) # type: ignore
     else:
         print("The 'torch' package is not imported, skipping torch seed.")
     if "scipy" in globals():
