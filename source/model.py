@@ -1,20 +1,37 @@
-from torch import nn
+import tensorflow as tf
 
-class NeuralNetwork(nn.Module):
-    def __init__(self, conv1d_filters, conv1d_strides, hidden_units):
-        super().__init__()
-        self.pad = nn.ConstantPad1d(padding=12, value=0)
-        self.conv1 = nn.Conv1d(in_channels=1, out_channels=conv1d_filters, kernel_size=12, stride=conv1d_strides)
-        self.conv2 = nn.Conv1d(in_channels=conv1d_filters, out_channels=conv1d_filters, kernel_size=12, stride=conv1d_strides)
-        self.lstm = nn.LSTM(input_size=16, hidden_size=hidden_units, batch_first=True, bias=True)
-        self.linear = nn.Linear(in_features=hidden_units, out_features=1)
+def build_model(input_shape, output_length):
+    # Built basic sequential CNN
+    model = tf.keras.Sequential()
+    model.add(tf.keras.Input(shape=input_shape))
+    model.add(tf.keras.layers.BatchNormalization())
+    
+    model.add(tf.keras.layers.Conv2D(32, (3, 3), activation="relu"))
+    model.add(tf.keras.layers.MaxPool2D(pool_size=(2, 2)))
+    model.add(tf.keras.layers.BatchNormalization())
+    model.add(tf.keras.layers.Dropout(0.25))
+    
+    model.add(tf.keras.layers.Conv2D(64, (3, 3), activation="relu"))
+    model.add(tf.keras.layers.MaxPool2D(pool_size=(2, 2)))
+    model.add(tf.keras.layers.BatchNormalization())
+    model.add(tf.keras.layers.Dropout(0.25))
+    
+    model.add(tf.keras.layers.Conv2D(128, (3, 3), activation="relu"))
+    model.add(tf.keras.layers.GlobalMaxPool2D())
+    model.add(tf.keras.layers.Dense(output_length, activation="softmax"))
 
-    def forward(self, x):
-        x = self.pad(x)
-        x = self.conv1(x)
-        x = self.pad(x)
-        x = self.conv2(x)
-        x = x.permute(0, 2, 1)
-        output, (hidden, cell) = self.lstm(x)
-        x = self.linear(output[:, -1, :])
-        return x
+    print("Model architecture successfully built")
+    return model
+
+
+
+def compile_model(model, learning_rate=0.001):
+    # compile model
+    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+
+    model.compile(optimizer=optimizer,
+                loss='categorical_crossentropy',
+                metrics=['accuracy'])
+
+    print("Model successfully compiled")
+    return model
