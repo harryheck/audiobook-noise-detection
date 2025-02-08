@@ -2,13 +2,13 @@ stages:
   train:
     cmd: python source/train.py
     deps:
+    - data/processed/
     - source/train.py
     - source/model.py
     - source/preprocess.py
-    - data/processed/
     params:
     - general.random_seed
     - train.learning_rate
     - train.epochs
     outs:
-    - models
+    - models/model_latest.keras

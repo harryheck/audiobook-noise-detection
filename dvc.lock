@@ -23,11 +23,11 @@ stages:
     params:
       params.yaml:
         general.random_seed: 42
-        train.epochs: 3
+        train.epochs: 1
         train.learning_rate: 0.01
     outs:
     - path: models
       hash: md5
-      md5: 9f21c5baddaa881a331843a967150ce4.dir
+      md5: 3cd2ae255a355a6444a8dfb5de0800fb.dir
       size: 1182758
       nfiles: 1
