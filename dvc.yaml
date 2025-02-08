@@ -11,4 +11,4 @@ stages:
     - train.learning_rate
     - train.epochs
     outs:
-    - models/model_latest.keras
+    - models
