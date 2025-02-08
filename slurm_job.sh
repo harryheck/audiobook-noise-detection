@@ -5,7 +5,7 @@
 # See the LICENSE file in the root of this project for details.
 
 # Job name and logs
-#SBATCH -J tustu
+#SBATCH -J audiobook-noise-detection
 #SBATCH --output=./logs/slurm/slurm-%j.out
 
 # Resources needed
@@ -20,7 +20,7 @@
 
 # Get email notifications for job status
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=<your-email-address>
+#SBATCH --mail-user=schweikert@campus.tu-berlin.de
 
 # Default variable values
 rebuild_container=false

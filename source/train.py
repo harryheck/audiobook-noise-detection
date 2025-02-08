@@ -64,12 +64,13 @@ def main():
     print("Starting training...")
     train_model(model, train_dataset, eval_dataset, epochs, [tensorboard_cb, early_stopping_cb])
     print("Training completed successfully")
-    modelname = "model_latest.keras"
+    modelname = time.strftime("model_%Y_%m_%d-%H_%M_%S") + ".keras"
     modelpath = "models"
-    model_fullpath = os.path.join(modelpath, modelname)
-
-    model.save(model_fullpath)
+    if not os.path.exists(modelpath):
+        os.makedirs(modelpath)
+    model.save(os.path.join("models", modelname))
     print("Model saved as", modelname)
+
 
 if __name__ == "__main__":
     main()

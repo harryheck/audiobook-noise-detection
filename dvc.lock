@@ -18,16 +18,16 @@ stages:
       size: 6217
     - path: source/train.py
       hash: md5
-      md5: 0cd964ff50deb1e6ea94c90a0a6776d2
-      size: 2894
+      md5: f96d43e5a9811a12c339be4ab324bd22
+      size: 2895
     params:
       params.yaml:
         general.random_seed: 42
-        train.epochs: 1
+        train.epochs: 4
         train.learning_rate: 0.01
     outs:
     - path: models
       hash: md5
-      md5: 3cd2ae255a355a6444a8dfb5de0800fb.dir
+      md5: b54e4b95bfebb00d269628e61aef7ab1.dir
       size: 1182758
       nfiles: 1
