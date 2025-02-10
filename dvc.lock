@@ -5,29 +5,29 @@ stages:
     deps:
     - path: data/processed/
       hash: md5
-      md5: 778e1a56db5d09498384095056ae5ec1.dir
-      size: 26961100
-      nfiles: 3
+      md5: 6ca16527d8d33b866a7a2f3148605991.dir
+      size: 6287268
+      nfiles: 2
     - path: source/model.py
       hash: md5
       md5: 1a075ea228de0e6ef23789688cc2a368
       size: 1291
     - path: source/preprocess.py
       hash: md5
-      md5: 63ba0306c91037001e0d4af164005e81
-      size: 6217
+      md5: aff2b4c3acea4dadef99c42a9a9c8fae
+      size: 10117
     - path: source/train.py
       hash: md5
-      md5: f96d43e5a9811a12c339be4ab324bd22
+      md5: bc73e6506fd551ec9923d2ae82223eca
       size: 2895
     params:
       params.yaml:
         general.random_seed: 42
-        train.epochs: 4
-        train.learning_rate: 0.01
+        train.epochs: 5
+        train.learning_rate: 0.001
     outs:
     - path: models
       hash: md5
-      md5: b54e4b95bfebb00d269628e61aef7ab1.dir
-      size: 1182758
+      md5: 6a8d82b986913f03cd2162dce8ed6981.dir
+      size: 1182747
       nfiles: 1
