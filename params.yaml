@@ -11,6 +11,6 @@ model:
   hidden_units: 36
 train:
   batch_size: 4096 
-  learning_rate: 0.01
+  learning_rate: 0.001
   epochs: 5
   device_request: 'cuda'   
