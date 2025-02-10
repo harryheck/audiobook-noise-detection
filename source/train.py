@@ -1,5 +1,5 @@
 import tensorflow as tf
-from preprocess import load_spectrogram_data, load_labels, prepare_datasets
+from preprocess import load_spectrogram_data, encode_labels, prepare_datasets
 from model import build_model, compile_model
 from utils import config
 import os
@@ -24,8 +24,10 @@ def main():
     config.set_random_seeds(random_seed)
 
     # Load and preprocess data
-    spectrogram_tensor, _, _ = load_spectrogram_data(os.path.join("data", "processed", "dataset.h5"))
-    labels_tensor, label_classes, _, _ = load_labels(os.path.join("data", "processed", "*.csv"))
+    spectrogram_tensor, _, _, _, _, labels_raw = load_spectrogram_data(os.path.join("data", "processed", "*.h5"))
+    print(labels_raw)
+
+    labels_tensor, label_classes = encode_labels(labels_raw)
 
     # Prepare datasets
     train_dataset, eval_dataset = prepare_datasets(spectrogram_tensor, labels_tensor)
@@ -70,7 +72,6 @@ def main():
         os.makedirs(modelpath)
     model.save(os.path.join("models", modelname))
     print("Model saved as", modelname)
-
 
 if __name__ == "__main__":
     main()
