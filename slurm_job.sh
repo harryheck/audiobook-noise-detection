@@ -19,7 +19,7 @@ SBATCH --time=01:00:00
 SBATCH --partition=gpu
 
 # Get email notifications for job status
-#SBATCH --mail-type=ALL
+SBATCH --mail-type=ALL
 SBATCH --mail-user=schweikert@campus.tu-berlin.de
 
 # Default variable values
