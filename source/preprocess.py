@@ -8,7 +8,7 @@ from sklearn.preprocessing import LabelEncoder
 from tensorflow import keras
 from utils import config
 
-def load_spectrogram_data(h5_file_path="dataset.h5"):
+def load_spectrogram_data_old(h5_file_path="dataset.h5"):
     """load the spectrogram data from the h5 file
 
     Args:
@@ -56,7 +56,7 @@ def load_spectrogram_data(h5_file_path="dataset.h5"):
     return spectrogram_tensor, book_start, book_end
 
 
-def load_labels(label_folder='dataset/*/*.csv'):
+def load_labels_old(label_folder='dataset/*/*.csv'):
     """load the labels from the csv files
 
     Args:
@@ -117,6 +117,111 @@ def load_labels(label_folder='dataset/*/*.csv'):
     print(f"Labels successfully loaded and converted to tensor with size {labels_tensor.shape}")
 
     return labels_tensor, label_encoder.classes_, labels_book_start, labels_book_end
+
+
+
+def load_spectrogram_data(h5_folder_path="../H5_files/*.h5"):
+    """Load spectrogram data from multiple H5 files.
+
+    Args:
+        h5_folder_path (str, optional): Path to H5 files. Defaults to "dataset/*.h5".
+
+    Returns:
+        tf.Tensor: Spectrogram tensor
+        dict: Start index of each book
+        dict: End index of each book
+        dict: Start index of each chapter
+        dict: End index of each chapter
+        list: Labels (raw)
+    """
+    dataset = []
+    book_start = {}
+    book_end = {}
+    chapter_start = {}
+    chapter_end = {}
+    labels = []
+
+    h5_files = sorted(glob.glob(h5_folder_path))  # Get all H5 files
+
+    for h5_file in h5_files:
+        with h5py.File(h5_file, "r") as hdf_file:
+            book_name = list(hdf_file.keys())[0]  # Only one group per file (book)
+            book_group = hdf_file[book_name]
+
+            # Book Start Index
+            book_start[book_name] = len(dataset)
+            book_labels = []  # Temporary list for labels
+            book_chunks = []
+            chunk_numbers = []
+
+            for chunk_name in book_group.keys():
+                chunk_data = book_group[chunk_name][:]
+                book_chunks.append(chunk_data)
+                chunk_numbers.append(int(chunk_name.split("_")[-1]))  # Extract chunk number
+
+                # Extract label from chunk attribute
+                label_data = book_group[chunk_name].attrs.get("label", "none")  # Default to "none" if missing
+                book_labels.append(label_data)
+
+                # Track chapter start and end
+                chapter_name = "_".join(chunk_name.split("_")[:-1])  # Remove chunk ID
+                if chapter_name not in chapter_start:
+                    chapter_start[chapter_name] = len(dataset) + len(book_chunks) - 1
+                chapter_end[chapter_name] = len(dataset) + len(book_chunks) - 1
+
+            # Sort chunks in order
+            sorted_data = sorted(zip(chunk_numbers, book_chunks, book_labels), key=lambda x: x[0])
+            sorted_chunks = [x[1] for x in sorted_data]  # Sorted spectrogram data
+            sorted_labels = [x[2] for x in sorted_data]  # Sorted labels
+
+            dataset.extend(sorted_chunks)
+            labels.extend(sorted_labels)
+
+            # Book End Index
+            book_end[book_name] = len(dataset) - 1
+
+            print(f"Book {book_name} loaded with {len(book_chunks)} chunks")
+
+    # Convert dataset to tensor
+    spectrogram_tensor = tf.convert_to_tensor(dataset, dtype=tf.float32)
+    print(f"Data loaded. Tensor shape: {spectrogram_tensor.shape}")
+    print(f"Labeled data loaded. Label shape: {len(labels)}")
+
+    return spectrogram_tensor, book_start, book_end, chapter_start, chapter_end, labels
+
+
+def encode_labels(labels):
+    """Convert raw label data to one-hot encoded tensors.
+
+    Args:
+        labels (list): Raw labels list.
+
+    Returns:
+        tf.Tensor: One-hot encoded labels tensor.
+        np.array: Label classes.
+    """
+    label_encoder = LabelEncoder()
+    label_encoder.classes_ = np.array(["none", "coughing", "clearingthroat", "smack", "stomach"])
+
+    one_hot_labels = []
+    for label in labels:
+        individual_labels = label.split(",")  # Handle multiple labels per sample
+        integer_labels = label_encoder.transform(individual_labels)
+        one_hot_vectors = keras.utils.to_categorical(integer_labels, num_classes=len(label_encoder.classes_))
+
+        # Merge multiple labels into a single one-hot vector
+        combined_one_hot = np.max(one_hot_vectors, axis=0)
+        one_hot_labels.append(combined_one_hot)
+
+    labels_tensor = tf.convert_to_tensor(one_hot_labels, dtype=tf.float32)
+    print("Label encoding (one-hot):")
+    for i, v in enumerate(label_encoder.classes_):
+        print(i, v)
+    print()
+    print(f"Labels encoded. Tensor shape: {labels_tensor.shape}")
+
+    return labels_tensor, label_encoder.classes_
+
 
 
 def prepare_datasets(spectrogram_tensor, labels_tensor, batch_size=32, split_ratio=0.8):

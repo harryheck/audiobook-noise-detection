@@ -6,21 +6,21 @@
 
 # Job name and logs
 #SBATCH -J audiobook-noise-detection
-#SBATCH --output=./logs/slurm/slurm-%j.out
+SBATCH --output=./logs/slurm/slurm-%j.out
 
 # Resources needed
-#SBATCH --ntasks=1
-#SBATCH --nodes=1
+SBATCH --ntasks=1
+SBATCH --nodes=1
 #SBATCH --ntasks-per-core=1
 #SBATCH --cpus-per-task=1
 #SBATCH --gres=gpu:tesla:1
-#SBATCH --mem=100GB
-#SBATCH --time=10:00:00
-#SBATCH --partition=gpu
+SBATCH --mem=100GB
+SBATCH --time=10:00:00
+SBATCH --partition=gpu
 
 # Get email notifications for job status
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=schweikert@campus.tu-berlin.de
+SBATCH --mail-user=schweikert@campus.tu-berlin.de
 
 # Default variable values
 rebuild_container=false
