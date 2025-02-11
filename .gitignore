@@ -31,3 +31,6 @@ NOTES.md
 # Ignore local environment vars
 local.env
 /exp_logs
+
+#Ignore Singularity Image
+/audiobook-noise-detection-image_latest
