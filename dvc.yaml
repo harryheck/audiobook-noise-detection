@@ -2,7 +2,7 @@ stages:
   train:
     cmd: python source/train.py
     deps:
-    - data/processed/
+    - data/test/
     - source/train.py
     - source/model.py
     - source/preprocess.py
