@@ -53,10 +53,10 @@ def main():
     tensorboard_cb = tf.keras.callbacks.TensorBoard(get_run_logdir())
 
     # early stopping callback
-    early_stopping_cb = tf.keras.callbacks.EarlyStopping(monitor='accuracy', 
+    early_stopping_cb = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', 
                                                         min_delta=0, 
-                                                        patience=2, 
-                                                        verbose=0, 
+                                                        patience=5, 
+                                                        verbose=1, 
                                                         mode='auto', 
                                                         baseline=None, 
                                                         restore_best_weights=True)
