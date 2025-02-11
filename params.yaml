@@ -14,3 +14,4 @@ train:
   learning_rate: 0.0005
   epochs: 50
   device_request: 'cuda'   
+  num_workers: 8
