@@ -31,10 +31,19 @@ def main():
 
     # Load dataset
     print("Loading dataset. This may take a while...")
-    spectrogram_tensor, _, _, _, _, labels_raw = load_spectrogram_data(os.path.join("data", "processed", "*.h5"))
+    spectrogram_tensor, _, _, _, _, labels_raw = load_spectrogram_data(os.path.join("data", "test", "*.h5"))
     print("Dataset loaded.")
 
-    print("Preview of first few labels:", labels_raw[:5])
+    # 🚨 Debugging: Check dataset validity
+    print(f"Dataset Tensor Shape: {spectrogram_tensor.shape}")
+    print(f"Labels Raw (first 5): {labels_raw[:5]}")
+
+    # 🚨 Check for empty dataset
+    if spectrogram_tensor.shape[0] == 0:
+        raise ValueError("Error: The dataset is empty! Check preprocessing step.")
+
+    if len(labels_raw) == 0:
+        raise ValueError("Error: No labels found in dataset! Check preprocessing step.")
 
     labels_tensor, label_classes = encode_labels(labels_raw)
 
@@ -44,11 +53,16 @@ def main():
     print("Datasets prepared.")
 
     # Get input/output shapes
+    input_shape, output_length = None, None
     for batch_data, batch_labels in train_dataset.take(1):
         input_shape = batch_data.shape[1:]
         output_length = batch_labels.shape[1]
         print("Batch Data Shape:", batch_data.shape)
         print("Batch Labels Shape:", batch_labels.shape)
+
+    # 🚨 Ensure input shapes are valid
+    if input_shape is None or output_length is None:
+        raise ValueError("Error: input_shape or output_length is None! Dataset may be empty.")
 
     # Define training strategy
     strategy = tf.distribute.MirroredStrategy()
