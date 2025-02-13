@@ -62,18 +62,18 @@ def main():
         raise ValueError("Error: input_shape or output_length is None! Dataset may be empty.")
 
     # Define training strategy
-    strategy = tf.distribute.MirroredStrategy()
+    # strategy = tf.distribute.MirroredStrategy()
 
-    with strategy.scope():
-        # Build and compile model
-        print("Building model...")
-        model = build_model(input_shape, output_length)
-        model = compile_model(model, learning_rate)
-        print("Model built.")
+
+    # Build and compile model
+    print("Building model...")
+    model = build_model(input_shape, output_length)
+    model = compile_model(model, learning_rate)
+    print("Model built.")
 
     # Enable mixed precision training
-    tf.keras.mixed_precision.set_global_policy('mixed_float16')
-    print("Using mixed precision training.")
+    # tf.keras.mixed_precision.set_global_policy('mixed_float32')
+    # print("Using mixed precision training.")
 
     # Tensorboard logs
     def get_run_logdir():
@@ -86,7 +86,7 @@ def main():
     early_stopping_cb = tf.keras.callbacks.EarlyStopping(
         monitor='val_accuracy', 
         min_delta=0, 
-        patience=5, 
+        patience=8, 
         verbose=1, 
         mode='auto', 
         baseline=None, 
