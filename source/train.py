@@ -16,10 +16,6 @@ def main():
     # Print available GPUs
     print("Checking available GPUs:", tf.config.list_physical_devices('GPU'))
 
-    # Force CPU mode if necessary (AMD GPUs are not supported)
-    tf.config.set_visible_devices([], 'GPU')  
-    print("Running on CPU.")
-
     # Load config
     params = config.Params()
     random_seed = params['general']['random_seed']
@@ -81,7 +77,7 @@ def main():
     # Tensorboard logs
     def get_run_logdir():
         run_id = time.strftime("run_%Y_%m_%d-%H_%M_%S")
-        return os.path.join(os.curdir, '_logs', run_id)
+        return os.path.join(os.curdir, 'logs', 'tensorboard', run_id)
 
     tensorboard_cb = tf.keras.callbacks.TensorBoard(get_run_logdir())
 
