@@ -64,6 +64,7 @@ dvc cache dir $DEFAULT_DIR/.dvc/cache &&
 if [ -f "data/processed.dvc" ]; then
     echo "Pulling data with DVC..." 
     dvc pull data/processed;
+    dvc pull data/test;
 fi &&
 
 # Run the experiment with passed parameters. Runs with the default parameters if none are passed.
@@ -77,4 +78,4 @@ dvc exp push origin &&
 # Clean up the temporary sub-directory
 echo "Cleaning up..." &&
 cd .. &&
-rm -rf $UNIQUE_ID 
+rm -rf $UNIQUE_ID git 
