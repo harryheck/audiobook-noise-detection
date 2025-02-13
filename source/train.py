@@ -21,13 +21,14 @@ def main():
     random_seed = params['general']['random_seed']
     epochs = params['train']['epochs']
     learning_rate = params['train']['learning_rate']
+    batch_size = params['train']['batch_size']
 
     # Set random seed
     config.set_random_seeds(random_seed)
 
     # Load dataset
     print("Loading dataset. This may take a while...")
-    spectrogram_tensor, _, _, _, _, labels_raw = load_spectrogram_data(os.path.join("data", "test", "*.h5"))
+    spectrogram_tensor, _, _, _, _, labels_raw = load_spectrogram_data(os.path.join("data", "processed", "*.h5"))
     print("Dataset loaded.")
 
     # 🚨 Debugging: Check dataset validity
@@ -45,7 +46,7 @@ def main():
 
     # Prepare datasets
     print("Preparing datasets...")
-    train_dataset, eval_dataset = prepare_datasets(spectrogram_tensor, labels_tensor)
+    train_dataset, eval_dataset = prepare_datasets(spectrogram_tensor, labels_tensor, batch_size=batch_size)
     print("Datasets prepared.")
 
     # Get input/output shapes
