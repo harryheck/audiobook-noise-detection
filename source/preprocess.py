@@ -78,7 +78,7 @@ def load_spectrogram_data(h5_folder_path="../data/processed/*.h5"):
             book_end[book_name] = len(dataset) - 1
 
     # Convert dataset to tensor
-    spectrogram_tensor = tf.convert_to_tensor(dataset, dtype=tf.float32)
+    spectrogram_tensor = tf.data.Dataset.from_tensor_slices(dataset)
     return spectrogram_tensor, book_start, book_end, chapter_start, chapter_end, labels
 
 
