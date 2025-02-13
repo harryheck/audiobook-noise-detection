@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     openssh-client \
     rsync \
+    # Remove apt cache
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the global.env file
@@ -52,10 +53,5 @@ WORKDIR /home/app
 COPY requirements.txt .
 
 # Install dependencies inside a virtual environment
-RUN python3 -m venv /home/app/venv \
-    && /home/app/venv/bin/pip install --upgrade pip \
-    && /home/app/venv/bin/pip install -r requirements.txt \
+RUN python3 -m pip install -r requirements.txt \
     && rm requirements.txt
-
-# Set the default shell to bash
-SHELL ["/bin/bash", "-c"]
