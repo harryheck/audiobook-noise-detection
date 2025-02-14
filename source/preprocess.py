@@ -6,7 +6,7 @@ import os
 from sklearn.preprocessing import LabelEncoder
 from tensorflow import keras
 
-def load_spectrogram_data(h5_folder_path="data/train/*.h5"):
+def load_spectrogram_data(h5_folder_path="data/test/*.h5"):
     """Load spectrogram data from multiple H5 files.
 
     Args:

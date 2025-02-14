@@ -34,7 +34,7 @@ def main():
     config.set_random_seeds(random_seed)
 
     print("Loading dataset. This may take a while...")
-    spectrogram_dataset, book_start, book_end, chapter_start, chapter_end, labels_raw = load_spectrogram_data("data/train/*.h5")
+    spectrogram_dataset, book_start, book_end, chapter_start, chapter_end, labels_raw = load_spectrogram_data("data/test/*.h5")
     print("Dataset loaded.")
 
     print(f"Books: {list(book_start.keys())}")
