@@ -38,7 +38,7 @@ def build_model(input_shape, output_length):
     model.add(tf.keras.layers.Dropout(0.4))
 
     # 🔹 Fourth Conv Block (New)
-    model.add(tf.keras.layers.Conv2D(256, (3, 3), padding="same", kernel_regularizer=tf.keras.regularizers.l2(0.001)))
+    model.add(tf.keras.layers.Conv2D(128, (3, 3), padding="same", kernel_regularizer=tf.keras.regularizers.l2(0.001)))
     model.add(tf.keras.layers.LeakyReLU(alpha=0.1))
     model.add(tf.keras.layers.GlobalAveragePooling2D())  # ✅ Changed from GlobalMaxPool2D
 
