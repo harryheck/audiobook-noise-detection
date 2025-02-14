@@ -6,10 +6,13 @@ import os
 import time
 
 def train_model(model, train_dataset, eval_dataset, epochs=10, callbacks=None):
-    history = model.fit(train_dataset, 
-                        validation_data=eval_dataset, 
-                        epochs=epochs,
-                        callbacks=callbacks)
+    """Train the model on the provided dataset."""
+    history = model.fit(
+        train_dataset, 
+        validation_data=eval_dataset, 
+        epochs=epochs,
+        callbacks=callbacks
+    )
     return history
 
 def main():
@@ -19,7 +22,7 @@ def main():
     if gpus:
         try:
             for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)  # Enable memory growth
+                tf.config.experimental.set_memory_growth(gpu, True)  
             print(f"GPU memory growth enabled for: {gpus}")
         except RuntimeError as e:
             print(e)
@@ -36,7 +39,9 @@ def main():
 
     # Load dataset
     print("Loading dataset. This may take a while...")
-    spectrogram_dataset, book_start, book_end, chapter_start, chapter_end, labels_raw = load_spectrogram_data(os.path.join("data", "processed", "*.h5"))
+    spectrogram_dataset, book_start, book_end, chapter_start, chapter_end, labels_raw = load_spectrogram_data(
+        os.path.join("data", "processed", "*.h5")
+    )
     print("Dataset loaded.")
 
     # Encode labels
@@ -47,16 +52,12 @@ def main():
     train_dataset, eval_dataset = prepare_datasets(spectrogram_dataset, labels_dataset, batch_size=batch_size)
     print("Datasets prepared.")
 
-    # Get input/output shapes dynamically
-    input_shape, output_length = None, None
-    for batch_data, batch_labels in train_dataset.take(1):
-        input_shape = batch_data.shape[1:]
-        output_length = batch_labels.shape[1]
-        print("Input Shape:", input_shape)
-        print("Output Length:", output_length)
-
-    if input_shape is None or output_length is None:
-        raise ValueError("Error: input_shape or output_length is None! Dataset may be empty.")
+    # Get input/output shapes correctly
+    sample_batch_data, sample_batch_labels = next(iter(train_dataset))
+    input_shape = sample_batch_data.shape[1:]
+    output_length = sample_batch_labels.shape[1]
+    print("Input Shape:", input_shape)
+    print("Output Length:", output_length)
 
     # Build and compile model
     print("Building model...")
@@ -93,8 +94,7 @@ def main():
     # Save trained model
     modelname = time.strftime("model_%Y_%m_%d-%H_%M_%S") + ".keras"
     modelpath = "models"
-    if not os.path.exists(modelpath):
-        os.makedirs(modelpath)
+    os.makedirs(modelpath, exist_ok=True)
     model.save(os.path.join(modelpath, modelname))
     print("Model saved as", modelname)
 
