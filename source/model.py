@@ -78,3 +78,5 @@ def compile_model(model, learning_rate=0.001):
 
     print("✅ Model successfully compiled with learning rate reduction")
     return model, lr_scheduler
+
+#new
