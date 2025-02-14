@@ -16,7 +16,7 @@ def main():
     # Print available GPUs
     
     gpus = tf.config.list_physical_devices('GPU')
-    print("Checking available GPUs:", gpus)
+    print("Checking available GPUs:", gpus) 
     if gpus:
         try:
             for gpu in gpus:
