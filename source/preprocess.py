@@ -6,66 +6,131 @@ import os
 from sklearn.preprocessing import LabelEncoder
 from tensorflow import keras
 
-# === 🚀 Generator Function for Data Streaming ===
-def data_generator(h5_files):
-    """Generator function to yield spectrograms and labels one at a time."""
+# === Load Spectrogram Data from Multiple HDF5 Files ===
+def load_spectrogram_data(h5_folder_path="../data/processed/*.h5"):
+    """Load spectrogram data from multiple H5 files.
+
+    Args:
+        h5_folder_path (str, optional): Path to H5 files. Defaults to "../data/processed/*.h5".
+
+    Returns:
+        tf.data.Dataset: Spectrogram dataset
+        dict: Start index of each book
+        dict: End index of each book
+        dict: Start index of each chapter
+        dict: End index of each chapter
+        list: Labels (raw)
+    """
+    dataset = []
+    book_start = {}
+    book_end = {}
+    chapter_start = {}
+    chapter_end = {}
+    labels = []
+
+    h5_files = sorted(glob.glob(h5_folder_path))  # Get all H5 files
+
     for h5_file in h5_files:
         with h5py.File(h5_file, "r") as hdf_file:
-            book_name = list(hdf_file.keys())[0]  # Assume one group per file (book)
+            book_name = list(hdf_file.keys())[0]  # Only one group per file (book)
             book_group = hdf_file[book_name]
 
+            # Book Start Index
+            book_start[book_name] = len(dataset)
+            book_labels = []  
+            book_chunks = []
+            chunk_numbers = []
+
             for chunk_name in book_group.keys():
+                chunk_name_no_ext = os.path.splitext(chunk_name)[0]
+                chunk_parts = chunk_name_no_ext.split("_")
+
+                # Extract chunk number safely
+                if chunk_parts[-1].isdigit():
+                    chunk_number = int(chunk_parts[-1])
+                else:
+                    continue  
+
                 chunk_data = book_group[chunk_name][()]
-                label_data = book_group[chunk_name].attrs.get("label", "none")  # Default label
-                yield chunk_data, label_data  # ✅ Streams one spectrogram & label at a time
+                book_chunks.append(chunk_data)
+                chunk_numbers.append(chunk_number)
 
-# === 🚀 Load Spectrogram Data as Streaming Dataset ===
-def load_spectrogram_data(h5_folder_path="../data/processed/*.h5"):
-    """Loads spectrograms as a streaming dataset from multiple H5 files."""
+                # Extract label from chunk attribute
+                label_data = book_group[chunk_name].attrs.get("label", "none")  
+                book_labels.append(label_data)
 
-    h5_files = sorted(glob.glob(h5_folder_path))
-    
-    dataset = tf.data.Dataset.from_generator(
-        lambda: data_generator(h5_files),
-        output_signature=(
-            tf.TensorSpec(shape=(64, 345), dtype=tf.float32),  # Adjust shape as needed
-            tf.TensorSpec(shape=(), dtype=tf.string),  # Labels as string
-        )
-    )
-    
-    return dataset
+                # Track chapter start and end
+                chapter_name = "_".join(chunk_parts[:-1])  
+                if chapter_name not in chapter_start:
+                    chapter_start[chapter_name] = len(dataset) + len(book_chunks) - 1
+                chapter_end[chapter_name] = len(dataset) + len(book_chunks) - 1
 
-# === 🚀 Convert Labels to One-Hot Encoding (Efficiently) ===
-def encode_labels(dataset):
-    """Converts labels in the dataset to one-hot encoding lazily."""
+            # Sort chunks in order
+            sorted_data = sorted(zip(chunk_numbers, book_chunks, book_labels), key=lambda x: x[0])
+            sorted_chunks = [x[1] for x in sorted_data]  
+            sorted_labels = [x[2] for x in sorted_data]  
 
+            dataset.extend(sorted_chunks)
+            labels.extend(sorted_labels)
+
+            # Book End Index
+            book_end[book_name] = len(dataset) - 1
+
+    # Convert dataset to tf.data.Dataset
+    spectrogram_dataset = tf.data.Dataset.from_tensor_slices(dataset)
+    return spectrogram_dataset, book_start, book_end, chapter_start, chapter_end, labels
+
+
+# === Convert Labels to One-Hot Encoding ===
+def encode_labels(labels):
+    """Convert raw label data to one-hot encoded tensors.
+
+    Args:
+        labels (list): Raw labels list.
+
+    Returns:
+        tf.data.Dataset: One-hot encoded labels dataset.
+        np.array: Label classes.
+    """
     label_encoder = LabelEncoder()
     label_encoder.classes_ = np.array(["none", "coughing", "clearingthroat", "smack", "stomach"])
 
-    def one_hot_encode(label):
-        """Encodes a single label into one-hot format."""
-        integer_label = label_encoder.transform([label])[0]  # Convert label to integer
-        one_hot_vector = keras.utils.to_categorical(integer_label, num_classes=len(label_encoder.classes_))
-        return one_hot_vector
+    def process_label(label):
+        """Encodes a label string into a one-hot vector."""
+        individual_labels = tf.strings.split(label, ",")  
+        integer_labels = label_encoder.transform(individual_labels.numpy())  
+        one_hot_vectors = tf.one_hot(integer_labels, depth=len(label_encoder.classes_))
+        combined_one_hot = tf.reduce_max(one_hot_vectors, axis=0)  
+        return combined_one_hot
 
-    # Map labels on-the-fly without loading everything into memory
-    dataset = dataset.map(lambda x, y: (x, tf.numpy_function(one_hot_encode, [y], tf.float32)))
+    # Convert labels to a dataset
+    labels_dataset = tf.data.Dataset.from_tensor_slices(labels).map(lambda x: tf.py_function(process_label, [x], tf.float32))
 
-    return dataset
+    return labels_dataset, label_encoder.classes_
 
-# === 🚀 Create Streaming Train & Eval Datasets ===
-def prepare_datasets(dataset, batch_size=32, split_ratio=0.8):
-    """Prepares training and evaluation datasets using a streaming pipeline."""
 
-    # Shuffle and batch the dataset
-    dataset = dataset.shuffle(buffer_size=1000).cache()
-    
-    # Compute dataset sizes
-    dataset_size = sum(1 for _ in dataset)  # Count dataset size lazily
+# === Create Train & Eval Datasets ===
+def prepare_datasets(spectrogram_dataset, labels_dataset, batch_size=32, split_ratio=0.8):
+    """Create Dataset objects from spectrogram and labels tensors.
+
+    Args:
+        spectrogram_dataset (tf.data.Dataset): spectrogram dataset
+        labels_dataset (tf.data.Dataset): labels dataset
+        batch_size (int, optional): batch size. Defaults to 32.
+        split_ratio (float, optional): ratio of train to eval set. Defaults to 0.8.
+
+    Returns:
+        tf.data.Dataset: Training dataset
+        tf.data.Dataset: Evaluation dataset
+    """
+    dataset_complete = tf.data.Dataset.zip((spectrogram_dataset, labels_dataset))
+
+    dataset_size = sum(1 for _ in dataset_complete)  
     train_size = int(split_ratio * dataset_size)
 
-    # Split dataset into train & eval sets
-    train_dataset = dataset.take(train_size).batch(batch_size).prefetch(tf.data.AUTOTUNE)
-    eval_dataset = dataset.skip(train_size).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    dataset_complete = dataset_complete.shuffle(buffer_size=4000).cache()
+
+    train_dataset = dataset_complete.take(train_size).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    eval_dataset = dataset_complete.skip(train_size).batch(batch_size).prefetch(tf.data.AUTOTUNE)
 
     return train_dataset, eval_dataset
