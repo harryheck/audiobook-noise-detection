@@ -5,6 +5,7 @@ from utils import config
 import os
 import time
 
+
 def train_model(model, train_dataset, eval_dataset, epochs=10, callbacks=None):
     history = model.fit(
         train_dataset,
@@ -58,11 +59,18 @@ def main():
 
     print("Building model...")
     model = build_model(input_shape, output_length)
-    model, lr_scheduler = compile_model(model, learning_rate)
+    model = compile_model(model, learning_rate)
     print("Model built.")
 
+    # Tensorboard logs
+    def get_run_logdir():
+        run_id = time.strftime("run_%Y_%m_%d-%H_%M_%S")
+        return os.path.join(os.curdir, 'logs', 'tensorboard', run_id)
+
+    tensorboard_cb = tf.keras.callbacks.TensorBoard(get_run_logdir())
+
     print("Starting training...")
-    train_model(model, train_dataset, eval_dataset, epochs, [lr_scheduler])
+    train_model(model, train_dataset, eval_dataset, epochs, [tensorboard_cb])
     print("Training completed successfully.")
 
     modelname = time.strftime("model_%Y_%m_%d-%H_%M_%S") + ".keras"
