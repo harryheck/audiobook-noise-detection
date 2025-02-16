@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-def build_model(input_shape, output_length):
+def build_model(input_shape, output_length, dilation=1):
     """Builds a CNN model for audio classification using mel spectrograms.
 
     Args:
@@ -24,21 +24,21 @@ def build_model(input_shape, output_length):
     model.add(tf.keras.layers.Dropout(0.3))
 
     # 🔹 Second Conv Block
-    model.add(tf.keras.layers.Conv2D(64, (3, 3), padding="same", kernel_regularizer=tf.keras.regularizers.l2(0.0005)))
+    model.add(tf.keras.layers.Conv2D(64, (3, 3), padding="same", kernel_regularizer=tf.keras.regularizers.l2(0.0005), dilation_rate=dilation))
     model.add(tf.keras.layers.LeakyReLU(alpha=0.1))
     model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
     model.add(tf.keras.layers.BatchNormalization())
     model.add(tf.keras.layers.Dropout(0.3))
 
     # 🔹 Third Conv Block
-    model.add(tf.keras.layers.Conv2D(128, (3, 3), padding="same", kernel_regularizer=tf.keras.regularizers.l2(0.0005)))
+    model.add(tf.keras.layers.Conv2D(128, (3, 3), padding="same", kernel_regularizer=tf.keras.regularizers.l2(0.0005), dilation_rate=dilation))
     model.add(tf.keras.layers.LeakyReLU(alpha=0.1))
     model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
     model.add(tf.keras.layers.BatchNormalization())
     model.add(tf.keras.layers.Dropout(0.4))
 
     # 🔹 Fourth Conv Block (New)
-    model.add(tf.keras.layers.Conv2D(128, (3, 3), padding="same", kernel_regularizer=tf.keras.regularizers.l2(0.0005)))
+    model.add(tf.keras.layers.Conv2D(128, (3, 3), padding="same", kernel_regularizer=tf.keras.regularizers.l2(0.0005), dilation_rate=dilation))
     model.add(tf.keras.layers.LeakyReLU(alpha=0.1))
     model.add(tf.keras.layers.GlobalMaxPooling2D())
 

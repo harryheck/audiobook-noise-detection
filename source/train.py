@@ -4,7 +4,7 @@ from model import build_model, compile_model
 from utils import config
 import os
 import time
-
+from tensorflow.keras.utils import plot_model
 
 def train_model(model, train_dataset, eval_dataset, epochs=10, callbacks=None):
     history = model.fit(
@@ -31,6 +31,8 @@ def main():
     epochs = params['train']['epochs']
     learning_rate = params['train']['learning_rate']
     batch_size = params['train']['batch_size']
+    dilation = params['model']['conv2d_dilation']
+
 
     config.set_random_seeds(random_seed)
 
@@ -58,9 +60,14 @@ def main():
         raise ValueError("Error: input_shape or output_length is None! Dataset may be empty.")
 
     print("Building model...")
-    model = build_model(input_shape, output_length)
+    model = build_model(input_shape, output_length, dilation)
     model = compile_model(model, learning_rate)
     print("Model built.")
+    model.summary()
+
+    # uncomment for plotting of model architecture
+    # plot_model(model, to_file="model.png", show_shapes=True, show_layer_names=False, rankdir="LR", show_layer_activations=True)
+    # return
 
     # Tensorboard logs
     def get_run_logdir():

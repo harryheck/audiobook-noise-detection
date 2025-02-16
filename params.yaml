@@ -1,13 +1,10 @@
 general:
   random_seed: 42
-  input_size: 150
 preprocess:
   test_split: 0.2
 model:
-  conv1d_strides: 12
-  conv1d_filters: 16
-  hidden_units: 36
+  conv2d_dilation: 1
 train:
   batch_size: 8
-  learning_rate: 0.0001
-  epochs: 49
+  learning_rate: 0.0005
+  epochs: 5
