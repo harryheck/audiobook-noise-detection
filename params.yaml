@@ -10,4 +10,4 @@ model:
 train:
   batch_size: 8
   learning_rate: 0.0001
-  epochs: 50
+  epochs: 49
