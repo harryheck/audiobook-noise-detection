@@ -106,8 +106,8 @@ fi
 
 echo "Starting execution from singularity container..."
 
-# Set TensorFlow GPU memory allocator
-export TF_GPU_ALLOCATOR=cuda_malloc_async
+# Set TensorFlow GPU memory allocator (only use if not using TF_FORCE_GPU_ALLOW_GROWTH=true already)
+# export TF_GPU_ALLOCATOR=cuda_malloc_async
 
 # Run the singularity container
 singularity exec --nv --bind $DEFAULT_DIR $TUSTU_PROJECT_NAME-image_latest$container_extension ./exp_workflow.sh
