@@ -2,62 +2,36 @@ import numpy as np
 import h5py
 import tensorflow as tf
 import glob
-import os
 from sklearn.preprocessing import LabelEncoder
 from tensorflow import keras
 
 # === Load Spectrogram Data from Multiple HDF5 Files ===
-def load_spectrogram_data(h5_folder_path="../data/processed/*.h5"):
-    """Load spectrogram data from multiple H5 files.
-
-    Args:
-        h5_folder_path (str, optional): Path to H5 files. Defaults to "../data/processed/*.h5".
-
-    Returns:
-        tf.data.Dataset: Spectrogram dataset
-        dict: Book start indices
-        dict: Book end indices
-        dict: Chapter start indices
-        dict: Chapter end indices
-        list: Raw labels
-    """
+def load_spectrogram_data(h5_folder_path="data/processed/*.h5"):
     dataset = []
-    book_start = {}
-    book_end = {}
-    chapter_start = {}
-    chapter_end = {}
+    book_start, book_end, chapter_start, chapter_end = {}, {}, {}, {}
     labels = []
 
-    h5_files = sorted(glob.glob(h5_folder_path))  # Get all H5 files
+    h5_files = sorted(glob.glob(h5_folder_path))
 
     for h5_file in h5_files:
         with h5py.File(h5_file, "r") as hdf_file:
-            book_name = list(hdf_file.keys())[0]  # Assume only one book per file
+            book_name = list(hdf_file.keys())[0]
             book_group = hdf_file[book_name]
 
-            # Track book indices
             book_start[book_name] = len(dataset)
+            book_chunks, book_labels = [], []
 
             for chunk_name in book_group.keys():
                 chunk_data = book_group[chunk_name][()]
-                dataset.append(chunk_data)
-
-                # Extract label
+                book_chunks.append(chunk_data)
                 label_data = book_group[chunk_name].attrs.get("label", "none")
-                labels.append(label_data)
+                book_labels.append(label_data)
 
-                # Track chapter indices
-                chapter_name = "_".join(chunk_name.split("_")[:-1])  # Remove chunk ID
-                if chapter_name not in chapter_start:
-                    chapter_start[chapter_name] = len(dataset) - 1
-                chapter_end[chapter_name] = len(dataset) - 1
-
-            # Track book end index
+            dataset.extend(book_chunks)
+            labels.extend(book_labels)
             book_end[book_name] = len(dataset) - 1
 
-    # Convert dataset to TensorFlow dataset
     spectrogram_dataset = tf.data.Dataset.from_tensor_slices(dataset)
-
     return spectrogram_dataset, book_start, book_end, chapter_start, chapter_end, labels
 
 
