@@ -41,23 +41,17 @@ def load_spectrogram_generator(h5_folder_path="data/processed/*.h5"):
         tf.TensorSpec(shape=(5,), dtype=tf.float32)  # One-hot encoded multi-label
     ))
 
-def prepare_datasets(batch_size=8, train_books=6, val_books=2):
-    """Split dataset based on audiobooks, not randomly."""
+def prepare_datasets(batch_size=8, split_ratio=0.8):
+    """Create a dataset pipeline without preloading everything into memory."""
     dataset = load_spectrogram_generator()
-    
-    # Create a dataset list and partition by audiobook
-    dataset_list = list(dataset.as_numpy_iterator())  # Convert to list
-    books = np.unique([book_name for book_name, _ in dataset_list])  # Extract unique books
 
-    np.random.shuffle(books)
-    train_books = books[:train_books]
-    val_books = books[train_books:]
+    dataset_size = sum(1 for _ in dataset)  # Count dataset size
+    train_size = int(split_ratio * dataset_size)
 
-    train_data = [pair for pair in dataset_list if pair[0] in train_books]
-    val_data = [pair for pair in dataset_list if pair[0] in val_books]
+    dataset = dataset.shuffle(buffer_size=500)
 
-    train_dataset = tf.data.Dataset.from_tensor_slices(train_data).batch(batch_size).prefetch(tf.data.AUTOTUNE)
-    val_dataset = tf.data.Dataset.from_tensor_slices(val_data).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    train_dataset = dataset.take(train_size).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    eval_dataset = dataset.skip(train_size).batch(batch_size).prefetch(tf.data.AUTOTUNE)
 
-    return train_dataset, val_dataset
+    return train_dataset, eval_dataset
 
