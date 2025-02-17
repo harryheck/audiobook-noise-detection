@@ -1,4 +1,6 @@
 import tensorflow as tf
+from sklearn.utils.class_weight import compute_class_weight
+import numpy as np
 from preprocess import prepare_datasets
 from model import build_model, compile_model
 from utils import config
@@ -7,12 +9,28 @@ import os
 import time
 
 
+def get_class_weights(dataset):
+    """
+    Compute class weights based on dataset distribution.
+    """
+    labels = []
+    for _, y in dataset:
+        labels.extend(np.argmax(y.numpy(), axis=1))  # Convert one-hot to class indices
+
+    unique_classes = np.unique(labels)
+    weights = compute_class_weight(class_weight="balanced", classes=unique_classes, y=labels)
+    
+    return {i: w for i, w in enumerate(weights)}
+
+
 def train_model(model, train_dataset, eval_dataset, epochs=10, callbacks=None):
+    class_weights = get_class_weights(train_dataset)
     history = model.fit(
         train_dataset,
         validation_data=eval_dataset,
         epochs=epochs,
-        callbacks=callbacks
+        callbacks=callbacks,
+        class_weight=class_weights
     )
     return history
 
