@@ -73,7 +73,7 @@ def main():
 
     # Tensorboard logs
     def get_run_logdir():
-        base_logdir = os.getenv("TENSORBOARD_LOGDIR", default="/logs/tensorboard")
+        base_logdir = os.getenv("TENSORBOARD_LOGDIR", default="logs/tensorboard")
         run_id = time.strftime("run_%Y_%m_%d-%H_%M_%S")
         return os.path.join(base_logdir, run_id)
 
