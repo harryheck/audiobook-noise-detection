@@ -8,7 +8,7 @@ from tensorflow import keras
 
 # === Load Spectrogram Data from Multiple HDF5 Files ===
 def load_spectrogram_data(h5_folder_path="../data/processed/*.h5"):
-    """Load spectrogram data from multiple H5 files as a TensorFlow dataset.
+    """Load spectrogram data from multiple H5 files.
 
     Args:
         h5_folder_path (str, optional): Path to H5 files. Defaults to "../data/processed/*.h5".
@@ -21,39 +21,44 @@ def load_spectrogram_data(h5_folder_path="../data/processed/*.h5"):
         dict: Chapter end indices
         list: Raw labels
     """
-    h5_files = sorted(glob.glob(h5_folder_path))  # Get all H5 files
+    dataset = []
     book_start = {}
     book_end = {}
     chapter_start = {}
     chapter_end = {}
     labels = []
-    dataset = None
-    
+
+    h5_files = sorted(glob.glob(h5_folder_path))  # Get all H5 files
+
     for h5_file in h5_files:
         with h5py.File(h5_file, "r") as hdf_file:
             book_name = list(hdf_file.keys())[0]  # Assume only one book per file
             book_group = hdf_file[book_name]
 
-            book_start[book_name] = len(labels)
-            file_data = []
-            
+            # Track book indices
+            book_start[book_name] = len(dataset)
+
             for chunk_name in book_group.keys():
                 chunk_data = book_group[chunk_name][()]
-                file_data.append(chunk_data)
+                dataset.append(chunk_data)
+
+                # Extract label
                 label_data = book_group[chunk_name].attrs.get("label", "none")
                 labels.append(label_data)
-                
+
+                # Track chapter indices
                 chapter_name = "_".join(chunk_name.split("_")[:-1])  # Remove chunk ID
                 if chapter_name not in chapter_start:
-                    chapter_start[chapter_name] = len(labels) - 1
-                chapter_end[chapter_name] = len(labels) - 1
-            
-            book_end[book_name] = len(labels) - 1
-            
-            file_dataset = tf.data.Dataset.from_tensor_slices(file_data)
-            dataset = file_dataset if dataset is None else dataset.concatenate(file_dataset)
-    
-    return dataset, book_start, book_end, chapter_start, chapter_end, labels
+                    chapter_start[chapter_name] = len(dataset) - 1
+                chapter_end[chapter_name] = len(dataset) - 1
+
+            # Track book end index
+            book_end[book_name] = len(dataset) - 1
+
+    # Convert dataset to TensorFlow dataset
+    spectrogram_dataset = tf.data.Dataset.from_tensor_slices(dataset)
+
+    return spectrogram_dataset, book_start, book_end, chapter_start, chapter_end, labels
 
 
 # === Convert Labels to One-Hot Encoding ===

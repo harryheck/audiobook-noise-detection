@@ -4,7 +4,7 @@ from model import build_model, compile_model
 from utils import config
 import os
 import time
-from tensorflow.keras.utils import plot_model
+
 
 def train_model(model, train_dataset, eval_dataset, epochs=10, callbacks=None):
     history = model.fit(
@@ -28,17 +28,8 @@ def main():
 
     config.set_random_seeds(random_seed)
 
-    print("Loading dataset. This may take a while...")
-    spectrogram_dataset, book_start, book_end, chapter_start, chapter_end, labels_raw = load_spectrogram_data("data/processed/*.h5")
-    print("Dataset loaded.")
-
-    print(f"Books: {list(book_start.keys())}")
-    print(f"Total Samples: {len(labels_raw)}")
-
-    labels_tensor, label_classes = encode_labels(labels_raw)
-
     print("Preparing datasets...")
-    train_dataset, eval_dataset = prepare_datasets(spectrogram_dataset, labels_tensor, batch_size=batch_size)
+    train_dataset, eval_dataset = prepare_datasets(batch_size=batch_size)
     print("Datasets prepared.")
 
     input_shape, output_length = None, None
