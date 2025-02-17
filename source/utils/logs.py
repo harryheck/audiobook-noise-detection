@@ -12,128 +12,54 @@ import os
 import shutil
 from pathlib import Path, PosixPath
 from typing import Any, Dict, Optional, Union
+import tensorflow as tf
+import tensorflow.summary as summary
+from tensorboard.plugins.hparams import api as hp
 
-from torch.utils.tensorboard import SummaryWriter
-from torch.utils.tensorboard.summary import hparams
+
 
 if __name__ == "__main__":
     import config
 else:
     from utils import config
 
-class CustomSummaryWriter(SummaryWriter):
+class CustomSummaryWriter:
     """
-    A custom subclass of the TensorBoard SummaryWriter that allows for logging hyperparameters,
-    displaying scalar metrics in the HParams tab, and automatically synchronizing logs with a remote directory.
-
-    Args:
-        log_dir (Union[str, PosixPath]): Directory where the TensorBoard logs will be stored.
-        params (Optional[config.Params[str, Any]]): config.Params object of DVC hyperparameters to display. Defaults to None.
-        metrics (Optional[Dict[str, None]]): Dictionary of initial metrics to display in the HParams tab. Defaults to {}.
-        sync_interval (Optional[int]): Number of steps between automatic syncs to the remote directory.
-                                       Defaults to the value of the 'TUSTU_SYNC_INTERVAL' environment variable.
-                                       If set to 0, no automatic syncs will be performed.
-        remote_dir (Optional[Union[str, PosixPath]]): Remote directory with format 'host:dir' to which logs are synced.
-                                Defaults to None, in which case the remote directory is constructed from environment variables.
+    A custom TensorBoard writer for logging hyperparameters and metrics.
     """
 
-    def __init__(
-        self,
-        log_dir: Union[str, PosixPath],
-        params: Optional[config.Params[str, Any]] = None,
-        metrics: Optional[Dict[str, None]] = {},
-        sync_interval: Optional[int] = None,
-        remote_dir: Optional[Union[str, PosixPath]] = None,
-    ):
-        super().__init__(log_dir=log_dir)
-
-        self.sync_interval = (
-            sync_interval
-            if sync_interval is not None
-            else int(config.get_env_variable("TUSTU_SYNC_INTERVAL"))
-        )
-        self.remote_dir = (
-            remote_dir or self._construct_remote_dir()
-            if self.sync_interval != 0
-            else None
-        )
-        self.datetime = self._extract_datetime_from_log_dir(log_dir)
+    def __init__(self, log_dir, params=None, metrics=None):
+        self.log_dir = log_dir
+        self.file_writer = tf.summary.create_file_writer(log_dir)
+        self.params = params
+        self.metrics = metrics if metrics else {}
 
         if params:
-            self._log_hyperparameters(params, metrics, log_dir)
+            self._log_hyperparameters(params, self.metrics)
 
-        self.current_step = 0
-
-    def _construct_remote_dir(self) -> str:
-        """Constructs the remote directory path based on environment variables."""
-        tensorboard_host_dir = config.get_env_variable("TUSTU_TENSORBOARD_HOST_DIR")
-        tensorboard_host = config.get_env_variable("TUSTU_TENSORBOARD_HOST")
-        tensorboard_host_savepath = Path(
-            f'{tensorboard_host_dir}/{config.get_env_variable("TUSTU_PROJECT_NAME")}/logs/tensorboard'
-        )
-        os.system(f"ssh {tensorboard_host} 'mkdir -p {tensorboard_host_savepath}'")
-        return f"{tensorboard_host}:{tensorboard_host_savepath}"
-
-    def _extract_datetime_from_log_dir(self, log_dir: Union[str, PosixPath]) -> str:
-        """Extracts datetime information from the log directory path."""
-        return str(log_dir).split("/")[-1].split("_")[0]
-
-    def _log_hyperparameters(
-        self,
-        params: config.Params[str, Any],
-        metrics: Dict[str, None],
-        log_dir: str,
-    ) -> None:
-        """Logs hyperparameters and initial metrics to TensorBoard."""
-        params = params.flattened_copy()
-        params["datetime"] = self.datetime
-        self._add_hparams(hparam_dict=params, metric_dict=metrics, run_name=log_dir)
-
-    def step(self) -> None:
+    def _log_hyperparameters(self, params, metrics):
         """
-        Increments the current step and triggers log synchronization if the sync interval is reached.
+        Logs hyperparameters and initial metrics to TensorBoard.
         """
-        self.current_step += 1
-        if self.sync_interval != 0:
-            if self.current_step % self.sync_interval == 0:
-                self.flush()
-                self._sync_logs()
+        params = params.flattened_copy()  # Flatten nested parameters
+        with self.file_writer.as_default():
+            hp.hparams(params)  # Log hyperparameters
+            for metric_name, metric_value in metrics.items():
+                tf.summary.scalar(metric_name, metric_value, step=1)
 
-    def _sync_logs(self) -> None:
-        """Synchronizes the logs with the remote directory."""
-        # path = f'mkdir -p {self.remote_dir} && rsync'
-        os.system(f"rsync -rv --inplace --progress {self.log_dir} {self.remote_dir}")
-
-    def _add_hparams(
-        self,
-        hparam_dict: Dict[str, Any],
-        metric_dict: Dict[str, Optional[float]],
-        hparam_domain_discrete: Optional[Dict[str, list]] = None,
-        run_name: Optional[str] = None,
-    ) -> None:
+    def log_scalar(self, name, value, step):
         """
-        Adds hyperparameters and metrics to the same TensorBoard log file and enables scalar metrics in the HParams tab.
-
-        Args:
-            hparam_dict (Dict[str, float]): Dictionary of hyperparameters.
-            metric_dict (Dict[str, Optional[float]]): Dictionary of metrics.
-            hparam_domain_discrete (Optional[Dict[str, list]]): Discrete domains for hyperparameters.
-            run_name (Optional[str]): Name of the run in TensorBoard.
-
-        Raises:
-            TypeError: If `hparam_dict` or `metric_dict` are not dictionaries.
+        Logs scalar values to TensorBoard.
         """
-        if not isinstance(hparam_dict, dict) or not isinstance(metric_dict, dict):
-            raise TypeError("hparam_dict and metric_dict should be dictionary.")
+        with self.file_writer.as_default():
+            tf.summary.scalar(name, value, step=step)
+        self.file_writer.flush()
 
-        exp, ssi, sei = hparams(hparam_dict, metric_dict, hparam_domain_discrete)
-
-        self.file_writer.add_summary(exp)
-        self.file_writer.add_summary(ssi)
-        self.file_writer.add_summary(sei)
-        for k, v in metric_dict.items():
-            if v is not None:
-                self.add_scalar(k, v)
+    def step(self):
+        """
+        Flushes the file writer.
+        """
+        self.file_writer.flush()
 
 
 def return_tensorboard_path() -> PosixPath:

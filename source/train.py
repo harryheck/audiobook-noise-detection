@@ -2,6 +2,7 @@ import tensorflow as tf
 from preprocess import prepare_datasets
 from model import build_model, compile_model
 from utils import config
+from utils import logs
 import os
 import time
 
@@ -54,10 +55,11 @@ def main():
 
     # Tensorboard logs
     def get_run_logdir():
+        base_logdir = os.getenv("TENSORBOARD_LOGDIR", default="/logs/tensorboard")
         run_id = time.strftime("run_%Y_%m_%d-%H_%M_%S")
-        return os.path.join(os.curdir, 'logs', 'tensorboard', run_id)
+        return os.path.join(base_logdir, run_id)
 
-    tensorboard_cb = tf.keras.callbacks.TensorBoard(get_run_logdir())
+    tensorboard_cb = tf.keras.callbacks.TensorBoard(get_run_logdir(), histogram_freq=1)
 
     print("Starting training...")
     train_model(model, train_dataset, eval_dataset, epochs, [tensorboard_cb])

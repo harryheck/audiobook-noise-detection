@@ -50,7 +50,8 @@ def prepare_datasets(batch_size=8, split_ratio=0.8):
 
     dataset = dataset.shuffle(buffer_size=1000)
 
-    train_dataset = dataset.take(train_size).batch(batch_size).prefetch(tf.data.AUTOTUNE)
-    eval_dataset = dataset.skip(train_size).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    train_dataset = dataset.take(train_size).batch(batch_size, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
+    eval_dataset = dataset.skip(train_size).batch(batch_size, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
+
 
     return train_dataset, eval_dataset
