@@ -5,17 +5,16 @@
 # See the LICENSE file in the root of this project for details.
 
 # Job name and logs
-#SBATCH -J audiobook-noise-detection
+#SBATCH -J tustu
 #SBATCH --output=./logs/slurm/slurm-%j.out
 
 # Resources needed
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-core=1
-#SBATCH --cpus-per-task=1
-#SBATCH --gres=gpu:tesla:1
+#SBATCH --cpus-per-task=16
+#SBATCH --gres=gpu:tesla:2
 #SBATCH --mem=100GB
-#SBATCH --time=1:00:00
+#SBATCH --time=10:00:00
 #SBATCH --partition=gpu
 
 # Get email notifications for job status
@@ -105,9 +104,6 @@ if ! { [ -d $TUSTU_PROJECT_NAME-image_latest$container_extension ] || [ -f $TUST
 fi
 
 echo "Starting execution from singularity container..."
-
-# Set TensorFlow GPU memory allocator (only use if not using TF_FORCE_GPU_ALLOW_GROWTH=true already)
-export TF_GPU_ALLOCATOR=cuda_malloc_async
 
 # Run the singularity container
 singularity exec --nv --bind $DEFAULT_DIR $TUSTU_PROJECT_NAME-image_latest$container_extension ./exp_workflow.sh
