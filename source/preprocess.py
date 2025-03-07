@@ -1,57 +1,55 @@
+import torch
+from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import h5py
-import tensorflow as tf
 import glob
-import os
 from sklearn.preprocessing import LabelEncoder
-from tensorflow import keras
 
-def load_spectrogram_generator(h5_folder_path="data/processed/*.h5"):
-    """Load spectrogram data lazily from HDF5 files and properly handle multi-label encoding."""
-    
-    h5_files = sorted(glob.glob(h5_folder_path))  # Get all H5 files
-    label_encoder = LabelEncoder()
-    label_classes = np.array(["none", "coughing", "clearingthroat", "smack", "stomach"])
-    label_encoder.classes_ = label_classes  # Ensure known classes
+class SpectrogramDataset(Dataset):
+    def __init__(self, h5_folder_path="data/processed/*.h5"):
+        """Lazy loading of spectrogram data from HDF5 files with multi-label encoding."""
+        self.h5_files = sorted(glob.glob(h5_folder_path))  # Get all H5 files
+        self.label_encoder = LabelEncoder()
+        self.label_classes = np.array(["none", "coughing", "clearingthroat", "smack", "stomach"])
+        self.label_encoder.classes_ = self.label_classes  # Ensure known classes
+        self.data = self._load_data()
 
-    def generator():
-        for h5_file in h5_files:
+    def _load_data(self):
+        """Loads all data references without actually loading the dataset into memory."""
+        data_refs = []
+        for h5_file in self.h5_files:
             with h5py.File(h5_file, "r") as hdf_file:
                 book_name = list(hdf_file.keys())[0]
                 book_group = hdf_file[book_name]
-
                 for chunk_name in book_group.keys():
-                    chunk_data = book_group[chunk_name][()]
+                    data_refs.append((h5_file, book_name, chunk_name))
+        return data_refs
 
-                    # Handle multiple labels
-                    label_data = book_group[chunk_name].attrs.get("label", "none")
-                    individual_labels = label_data.split(",")  # Split multi-labels
+    def __len__(self):
+        return len(self.data)
 
-                    # Convert labels to one-hot encoding and merge
-                    integer_labels = label_encoder.transform(individual_labels)
-                    one_hot_vectors = keras.utils.to_categorical(integer_labels, num_classes=len(label_classes))
+    def __getitem__(self, idx):
+        h5_file, book_name, chunk_name = self.data[idx]
+        with h5py.File(h5_file, "r") as hdf_file:
+            chunk_data = hdf_file[book_name][chunk_name][()]
+            label_data = hdf_file[book_name][chunk_name].attrs.get("label", "none")
+            individual_labels = label_data.split(",")  # Handle multiple labels
+            integer_labels = self.label_encoder.transform(individual_labels)
+            one_hot_vectors = np.eye(len(self.label_classes))[integer_labels]
+            combined_one_hot = np.max(one_hot_vectors, axis=0)
+        return torch.tensor(chunk_data, dtype=torch.float32), torch.tensor(combined_one_hot, dtype=torch.float32)
 
-                    # Merge multiple one-hot encodings (logical OR)
-                    combined_one_hot = np.max(one_hot_vectors, axis=0)
 
-                    yield chunk_data, combined_one_hot
-
-    return tf.data.Dataset.from_generator(generator, output_signature=(
-        tf.TensorSpec(shape=(64, 345), dtype=tf.float32),  # Spectrogram shape
-        tf.TensorSpec(shape=(5,), dtype=tf.float32)  # One-hot encoded multi-label
-    ))
-
-def prepare_datasets(batch_size=8, split_ratio=0.8):
-    """Create a dataset pipeline without preloading everything into memory."""
-    dataset = load_spectrogram_generator()
-
-    dataset_size = sum(1 for _ in dataset)  # Count dataset size
+def prepare_dataloaders(batch_size=8, split_ratio=0.8):
+    """Creates PyTorch DataLoaders for training and evaluation."""
+    dataset = SpectrogramDataset()
+    dataset_size = len(dataset)
     train_size = int(split_ratio * dataset_size)
+    eval_size = dataset_size - train_size
 
-    dataset = dataset.shuffle(buffer_size=500)
-
-    train_dataset = dataset.take(train_size).batch(batch_size).prefetch(tf.data.AUTOTUNE)
-    eval_dataset = dataset.skip(train_size).batch(batch_size).prefetch(tf.data.AUTOTUNE)
-
-    return train_dataset, eval_dataset
-
+    train_dataset, eval_dataset = torch.utils.data.random_split(dataset, [train_size, eval_size])
+    
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    eval_loader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
+    
+    return train_loader, eval_loader
