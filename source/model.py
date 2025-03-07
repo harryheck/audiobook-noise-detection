@@ -1,78 +1,82 @@
-import tensorflow as tf
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
-def build_model(input_shape, output_length, dilation=1):
-    """Builds a CNN model for audio classification using mel spectrograms.
+class AudioCNN(nn.Module):
+    def __init__(self, input_shape, output_length, dilation=1):
+        """Builds a CNN model for audio classification using mel spectrograms.
 
-    Args:
-        input_shape (tuple): Shape of the input spectrogram (height, width, channels).
-        output_length (int): Number of output classes.
+        Args:
+            input_shape (tuple): Shape of the input spectrogram (height, width, channels).
+            output_length (int): Number of output classes.
+            dilation (int): Dilation rate for convolutional layers.
+        """
+        super(AudioCNN, self).__init__()
+        
+        self.batch_norm1 = nn.BatchNorm2d(1)
+        
+        # First Conv Block
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=2, padding_mode="replicate", dilation=dilation, bias=False)
+        self.leaky_relu1 = nn.LeakyReLU(0.1)
+        self.pool1 = nn.MaxPool2d(kernel_size=2)
+        self.batch_norm2 = nn.BatchNorm2d(32)
+        self.dropout1 = nn.Dropout(0.3)
+        
+        # Second Conv Block
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=2, padding_mode="replicate", dilation=dilation, bias=False)
+        self.leaky_relu2 = nn.LeakyReLU(0.1)
+        self.pool2 = nn.MaxPool2d(kernel_size=2)
+        self.batch_norm3 = nn.BatchNorm2d(64)
+        self.dropout2 = nn.Dropout(0.3)
+        
+        # Third Conv Block
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=2, padding_mode="replicate", dilation=dilation, bias=False)
+        self.leaky_relu3 = nn.LeakyReLU(0.1)
+        self.pool3 = nn.MaxPool2d(kernel_size=2)
+        self.batch_norm4 = nn.BatchNorm2d(128)
+        self.dropout3 = nn.Dropout(0.4)
+        
+        # Fourth Conv Block
+        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, padding=2, padding_mode="replicate", dilation=dilation, bias=False)
+        self.leaky_relu4 = nn.LeakyReLU(0.1)
+        self.global_pool = nn.AdaptiveMaxPool2d((1, 1))
+        
+        # Fully Connected Layer
+        self.fc1 = nn.Linear(128, 128)
+        self.dropout4 = nn.Dropout(0.5)
+        
+        # Output Layer
+        self.fc2 = nn.Linear(128, output_length)
 
-    Returns:
-        model (tf.keras.Model): Compiled Keras model.
-    """
-    model = tf.keras.Sequential()
-
-    # ✅ Ensure correct input shape
-    model.add(tf.keras.Input(shape=(input_shape[0], input_shape[1], 1)))  # Ensure grayscale (1 channel)
-    model.add(tf.keras.layers.BatchNormalization())
-
-    # 🔹 First Conv Block
-    model.add(tf.keras.layers.Conv2D(32, (3, 3), padding="same", kernel_regularizer=tf.keras.regularizers.l2(0.0005)))
-    model.add(tf.keras.layers.LeakyReLU(alpha=0.1))
-    model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
-    model.add(tf.keras.layers.BatchNormalization())
-    model.add(tf.keras.layers.Dropout(0.3))
-
-    # 🔹 Second Conv Block
-    model.add(tf.keras.layers.Conv2D(64, (3, 3), padding="same", kernel_regularizer=tf.keras.regularizers.l2(0.0005), dilation_rate=dilation))
-    model.add(tf.keras.layers.LeakyReLU(alpha=0.1))
-    model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
-    model.add(tf.keras.layers.BatchNormalization())
-    model.add(tf.keras.layers.Dropout(0.3))
-
-    # 🔹 Third Conv Block
-    model.add(tf.keras.layers.Conv2D(128, (3, 3), padding="same", kernel_regularizer=tf.keras.regularizers.l2(0.0005), dilation_rate=dilation))
-    model.add(tf.keras.layers.LeakyReLU(alpha=0.1))
-    model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
-    model.add(tf.keras.layers.BatchNormalization())
-    model.add(tf.keras.layers.Dropout(0.4))
-
-    # 🔹 Fourth Conv Block (New)
-    model.add(tf.keras.layers.Conv2D(128, (3, 3), padding="same", kernel_regularizer=tf.keras.regularizers.l2(0.0005), dilation_rate=dilation))
-    model.add(tf.keras.layers.LeakyReLU(alpha=0.1))
-    model.add(tf.keras.layers.GlobalMaxPooling2D())
-
-    # 🔹 Fully Connected Layer
-    model.add(tf.keras.layers.Dense(128, activation="swish", activity_regularizer=tf.keras.regularizers.l2(0.0005)))
-    model.add(tf.keras.layers.Dropout(0.5))
-
-    # 🔹 Output Layer
-    model.add(tf.keras.layers.Dense(output_length, activation="softmax"))
-
-    print("✅ Model architecture successfully built")
-    return model
-
-
-def compile_model(model, learning_rate=0.001):
-    """Compiles the CNN model with Adam optimizer and learning rate decay.
-
-    Args:
-        model (tf.keras.Model): Keras model.
-        learning_rate (float, optional): Initial learning rate. Defaults to 0.001.
-
-    Returns:
-        tf.keras.Model: Compiled model.
-    """
-    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate, clipnorm=1.0)
-    f1_score = tf.keras.metrics.FBetaScore(
-        average="weighted", beta=1.0, threshold=None, name="fbeta_score"
-    )
-
-    model.compile(
-        optimizer=optimizer,
-        loss="categorical_crossentropy",
-        metrics=["accuracy", f1_score]
-    )
-
-    print("✅ Model successfully compiled.")
-    return model
+    def forward(self, x):
+        x = self.batch_norm1(x)
+        
+        x = self.conv1(x)
+        x = self.leaky_relu1(x)
+        x = self.pool1(x)
+        x = self.batch_norm2(x)
+        x = self.dropout1(x)
+        
+        x = self.conv2(x)
+        x = self.leaky_relu2(x)
+        x = self.pool2(x)
+        x = self.batch_norm3(x)
+        x = self.dropout2(x)
+        
+        x = self.conv3(x)
+        x = self.leaky_relu3(x)
+        x = self.pool3(x)
+        x = self.batch_norm4(x)
+        x = self.dropout3(x)
+        
+        x = self.conv4(x)
+        x = self.leaky_relu4(x)
+        x = self.global_pool(x)
+        
+        x = torch.flatten(x, 1)
+        x = self.fc1(x)
+        x = F.silu(x)  # Swish activation
+        x = self.dropout4(x)
+        
+        x = self.fc2(x)
+        return F.log_softmax(x, dim=1)

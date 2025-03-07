@@ -5,6 +5,7 @@ preprocess:
 model:
   conv2d_dilation: 1
 train:
+  device_request: 'cuda'
   batch_size: 8
   learning_rate: 0.0005
-  epochs: 1
+  epochs: 5
