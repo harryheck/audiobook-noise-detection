@@ -72,10 +72,10 @@ def main():
     dilation = params['model']['conv2d_dilation']
     
     # Create a SummaryWriter object to write the tensorboard logs
-    #tensorboard_path = logs.return_tensorboard_path() # for remote logging
-    tensorboard_path = Path('_logs') # for local running
+    tensorboard_path = logs.return_tensorboard_path() # for remote logging
+    #tensorboard_path = Path('_logs') # for local running
     metrics = {'Epoch_Loss/train': None, 'Epoch_Loss/test': None, 'Batch_Loss/train': None}
-    writer = logs.CustomSummaryWriter(log_dir=tensorboard_path, params=params, metrics=metrics, sync_interval=0) # remove sync_interval=0 for remote logging
+    writer = logs.CustomSummaryWriter(log_dir=tensorboard_path, params=params, metrics=metrics) # remove sync_interval=0 for remote logging
 
     config.set_random_seeds(random_seed)
 
