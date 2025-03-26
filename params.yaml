@@ -6,7 +6,7 @@ model:
   conv2d_dilation: 1
 train:
   device_request: 'cuda'
-  batch_size: 125
+  batch_size: 128
   learning_rate: 0.0005
   epochs: 10
   early_stopping_patience: 5
