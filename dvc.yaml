@@ -8,8 +8,13 @@ stages:
     - source/preprocess.py
     params:
     - general.random_seed
+    - preprocess.min_split_ratio
+    - model.conv2d_dilation
+    - train.device_request
+    - train.batch_size
     - train.learning_rate
     - train.epochs
+    - train.early_stopping_patience
     outs:
     - models
   save_logs:
