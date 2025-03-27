@@ -23,12 +23,17 @@ stages:
     params:
       params.yaml:
         general.random_seed: 42
+        model.conv2d_dilation: 1
+        preprocess.min_split_ratio: 0.75
+        train.batch_size: 128
+        train.device_request: cuda
+        train.early_stopping_patience: 5
         train.epochs: 10
         train.learning_rate: 0.0005
     outs:
     - path: models
       hash: md5
-      md5: fde39676d09fd5511ba0d4212fb54d2e.dir
+      md5: ec16341971da91e0b683982745de369f.dir
       size: 1041858
       nfiles: 1
   save_logs:

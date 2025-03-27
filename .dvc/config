@@ -3,6 +3,6 @@
 [cache]
     shared = group
     type = symlink
-    dir = cache
+    dir = /scratch/rschweikert/audiobook-noise-detection/.dvc/cache
 ['remote "myremote"']
     url = webdavs://tubcloud.tu-berlin.de/remote.php/dav/files/6162a6c0-823c-1039-8d2f-510a35d2f935
