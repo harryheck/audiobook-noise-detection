@@ -38,7 +38,10 @@ class SpectrogramDataset(Dataset):
         return index_map
 
     def __len__(self):
-        return len(self.data)
+        total_len = 0
+        for book_name, chunks in self.data.items():
+            total_len += len(chunks)
+        return total_len
 
     def __getitem__(self, idx):
         # Convert global index to per-book index
@@ -68,7 +71,6 @@ def prepare_dataloaders(batch_size=8, min_split_ratio=None):
 
     books = list(dataset.data.keys())
     np.random.shuffle(books)
-    print("Book order:", books)
     train_books = []
     eval_books = []
     train_size = 0
@@ -79,6 +81,9 @@ def prepare_dataloaders(batch_size=8, min_split_ratio=None):
             train_size += len(dataset.data[book])
         else:
             eval_books.append(book)
+
+    print("Train books:", train_books)
+    print("Eval books:", eval_books)
 
     # train_size = int(split_ratio * dataset_size)
     # eval_size = dataset_size - train_size
