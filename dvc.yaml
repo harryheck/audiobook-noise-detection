@@ -15,6 +15,7 @@ stages:
     - train.learning_rate
     - train.epochs
     - train.early_stopping_patience
+    - train.weight_scaling
     outs:
     - models
   save_logs:

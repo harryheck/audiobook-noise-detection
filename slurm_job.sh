@@ -13,7 +13,7 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:tesla:2
-#SBATCH --mem=90GB
+#SBATCH --mem=10GB
 #SBATCH --time=9:00:00
 #SBATCH --partition=gpu
 

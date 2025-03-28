@@ -12,9 +12,9 @@ import time
 from tqdm import tqdm
 
 
-def get_class_weights(dataset, device):
+def get_class_weights(dataset, device, alpha=1.0):
     """
-    Compute class weights based on dataset distribution.
+    Compute class weights based on dataset distribution. Scaled by alpha (less extreme weights for 0 < alpha < 1).
     """
     labels = []
     for _, y in dataset:
@@ -22,8 +22,9 @@ def get_class_weights(dataset, device):
 
     unique_classes = np.unique(labels)
     weights = compute_class_weight(class_weight="balanced", classes=unique_classes, y=labels)
+    scaled_weights = weights ** alpha
     
-    return torch.tensor(weights, dtype=torch.float32, device=device)
+    return torch.tensor(scaled_weights, dtype=torch.float32, device=device)
 
 def compute_metrics(y_true, y_pred):
     y_true = np.argmax(y_true, axis=1)
@@ -145,6 +146,7 @@ def main():
     device_request = params['train']['device_request']
     dilation = params['model']['conv2d_dilation']
     patience = params['train']['early_stopping_patience'] # Number of epochs to wait before stopping
+    weight_scaling = params['train']['weight_scaling'] # Scaling factor for class weights
  
     counter = 0
     best_f1_score = 0.0  # Track the best avg F1 score
@@ -181,7 +183,7 @@ def main():
 
     # Compute class weights
     print("Computing class weights...")
-    class_weights = get_class_weights(train_dataloader.dataset, device)
+    class_weights = get_class_weights(train_dataloader.dataset, device, alpha=weight_scaling)
     print("Class weights computed.")
 
     # Get a single batch from the DataLoader
