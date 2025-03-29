@@ -14,12 +14,12 @@ stages:
       size: 2885
     - path: source/preprocess.py
       hash: md5
-      md5: b94e26f10b21ee0bde0e0420c7c8fa05
-      size: 4438
+      md5: 22e760c8ecdce84496abd78d9dce1564
+      size: 4589
     - path: source/train.py
       hash: md5
-      md5: 6b534cb5804e66280cd23b38a4985c56
-      size: 10309
+      md5: d68d58ef2288ab6c7659d53818ddc303
+      size: 10535
     params:
       params.yaml:
         general.random_seed: 42
@@ -29,11 +29,12 @@ stages:
         train.device_request: cuda
         train.early_stopping_patience: 5
         train.epochs: 10
-        train.learning_rate: 0.0005
+        train.learning_rate: 5e-05
+        train.weight_scaling: 0.5
     outs:
     - path: models
       hash: md5
-      md5: ec16341971da91e0b683982745de369f.dir
+      md5: 62d1cf71d1cf62d89602299d4902952c.dir
       size: 1041858
       nfiles: 1
   save_logs:
